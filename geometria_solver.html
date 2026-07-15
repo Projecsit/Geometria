@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero — Solucionador Geométrico</title>
+<style>
+  :root{
+    --blueprint-900:#eaf2fb;
+    --blueprint-800:#ffffff;
+    --grid-line:#cfe0f2;
+    --chalk:#233a55;
+    --chalk-dim:#6d84a0;
+    --amber:#d98e3b;
+    --teal:#2f8f82;
+    --danger:#c14f42;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--blueprint-900);
+    color:var(--chalk);
+    font-family:var(--display);
+    min-height:100vh;
+  }
+
+  body{
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    background-position:-1px -1px;
+  }
+
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:36px 24px 60px;
+  }
+
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid var(--grid-line);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  header .title-block{display:flex; flex-direction:column; gap:4px;}
+
+  h1{
+    font-size:1.65rem;
+    font-weight:700;
+    letter-spacing:0.5px;
+    margin:0;
+  }
+  h1 .accent{color:var(--amber);}
+
+  .subtitle{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--chalk-dim);
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+  }
+
+  .plate{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--chalk-dim);
+    border:1px solid var(--grid-line);
+    padding:6px 10px;
+    letter-spacing:1px;
+  }
+
+  main{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:24px;
+  }
+
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:rgba(255,255,255,0.75);
+    border:1px solid var(--grid-line);
+    padding:22px;
+    box-shadow:0 2px 14px rgba(80,120,170,0.08);
+  }
+
+  .panel h2{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:1.4px;
+    color:var(--amber);
+    margin:0 0 16px 0;
+    font-family:var(--mono);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2::before{
+    content:"";
+    width:8px; height:8px;
+    border:1px solid var(--amber);
+    transform:rotate(45deg);
+    display:inline-block;
+  }
+
+  label{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:var(--chalk-dim);
+    letter-spacing:0.4px;
+    margin-bottom:6px;
+  }
+
+  select, input[type="number"]{
+    width:100%;
+    background:#ffffff;
+    border:1px solid var(--grid-line);
+    color:var(--chalk);
+    font-family:var(--mono);
+    font-size:0.95rem;
+    padding:10px 12px;
+    margin-bottom:16px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  select:focus, input[type="number"]:focus{
+    border-color:var(--amber);
+  }
+  select{
+    appearance:none;
+    background-image:linear-gradient(45deg, transparent 50%, var(--amber) 50%), linear-gradient(135deg, var(--amber) 50%, transparent 50%);
+    background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+    background-size:5px 5px, 5px 5px;
+    background-repeat:no-repeat;
+  }
+
+  .field-group{
+    display:none;
+  }
+  .field-group.active{
+    display:block;
+  }
+
+  .error-msg{
+    font-family:var(--mono);
+    font-size:0.76rem;
+    color:var(--danger);
+    border-left:2px solid var(--danger);
+    padding:8px 10px;
+    margin-bottom:14px;
+    background:rgba(193,79,66,0.08);
+    display:none;
+  }
+  .error-msg.show{display:block;}
+
+  button#solveBtn{
+    width:100%;
+    background:var(--amber);
+    color:#ffffff;
+    border:none;
+    font-family:var(--mono);
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-size:0.85rem;
+    padding:13px;
+    cursor:pointer;
+    transition:transform .1s ease, background .15s ease;
+  }
+  button#solveBtn:hover{background:#eab566;}
+  button#solveBtn:active{transform:scale(0.98);}
+
+  .hint{
+    font-family:var(--mono);
+    font-size:0.68rem;
+    color:var(--chalk-dim);
+    margin-top:14px;
+    line-height:1.5;
+    border-top:1px dashed var(--grid-line);
+    padding-top:12px;
+  }
+
+  .canvas-panel{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .canvas-frame{
+    border:1px solid var(--grid-line);
+    background:rgba(255,255,255,0.75);
+    padding:16px;
+    position:relative;
+    box-shadow:0 2px 14px rgba(80,120,170,0.08);
+  }
+  .canvas-frame .corner{
+    position:absolute;
+    width:12px; height:12px;
+    border-color:var(--amber);
+  }
+  .corner.tl{top:-1px;left:-1px;border-top:2px solid var(--amber);border-left:2px solid var(--amber);}
+  .corner.tr{top:-1px;right:-1px;border-top:2px solid var(--amber);border-right:2px solid var(--amber);}
+  .corner.bl{bottom:-1px;left:-1px;border-bottom:2px solid var(--amber);border-left:2px solid var(--amber);}
+  .corner.br{bottom:-1px;right:-1px;border-bottom:2px solid var(--amber);border-right:2px solid var(--amber);}
+
+  canvas{
+    width:100%;
+    height:340px;
+    display:block;
+  }
+
+  .results{
+    border:1px solid var(--grid-line);
+    background:rgba(255,255,255,0.75);
+    padding:22px;
+    min-height:120px;
+    box-shadow:0 2px 14px rgba(80,120,170,0.08);
+  }
+
+  .results h2{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:1.4px;
+    color:var(--teal);
+    margin:0 0 14px 0;
+    font-family:var(--mono);
+  }
+
+  .result-empty{
+    font-family:var(--mono);
+    color:var(--chalk-dim);
+    font-size:0.82rem;
+    font-style:normal;
+  }
+
+  .step-line{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    line-height:1.9;
+    color:var(--chalk);
+    border-bottom:1px dotted var(--grid-line);
+    padding:6px 0;
+    display:flex;
+    gap:12px;
+  }
+  .step-line:last-child{border-bottom:none;}
+  .step-num{
+    color:var(--amber);
+    min-width:18px;
+    flex-shrink:0;
+  }
+
+  .final-value{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--grid-line);
+    font-family:var(--mono);
+    font-size:1.1rem;
+    color:var(--amber);
+    letter-spacing:0.4px;
+  }
+  .final-value span{color:var(--chalk-dim); font-size:0.75rem; display:block; text-transform:uppercase; margin-bottom:4px;}
+
+  footer{
+    margin-top:30px;
+    font-family:var(--mono);
+    font-size:0.65rem;
+    color:var(--chalk-dim);
+    text-align:center;
+    letter-spacing:0.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-block">
+      <h1>Tablero<span class="accent">·</span>Geométrico</h1>
+      <div class="subtitle">Solucionador de figuras — precisión al detalle</div>
+    </div>
+    <div class="plate">ESC. VARIABLE / UNID. LIBRE</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Selección de figura</h2>
+
+      <label for="shapeSelect">Tipo de figura</label>
+      <select id="shapeSelect">
+        <option value="circulo">Círculo</option>
+        <option value="rectangulo">Rectángulo</option>
+        <option value="triangulo_rect">Triángulo rectángulo (Pitágoras)</option>
+        <option value="cilindro">Cilindro (volumen)</option>
+      </select>
+
+      <div id="fields">
+        <div class="field-group" data-shape="circulo">
+          <label for="circ_r">Radio (r)</label>
+          <input type="number" id="circ_r" step="any" placeholder="Ej. 5">
+        </div>
+
+        <div class="field-group" data-shape="rectangulo">
+          <label for="rect_b">Base (b)</label>
+          <input type="number" id="rect_b" step="any" placeholder="Ej. 8">
+          <label for="rect_h">Altura (h)</label>
+          <input type="number" id="rect_h" step="any" placeholder="Ej. 5">
+        </div>
+
+        <div class="field-group" data-shape="triangulo_rect">
+          <label for="tri_a">Cateto a</label>
+          <input type="number" id="tri_a" step="any" placeholder="Ej. 3">
+          <label for="tri_b">Cateto b</label>
+          <input type="number" id="tri_b" step="any" placeholder="Ej. 4">
+        </div>
+
+        <div class="field-group" data-shape="cilindro">
+          <label for="cil_r">Radio de la base (r)</label>
+          <input type="number" id="cil_r" step="any" placeholder="Ej. 3">
+          <label for="cil_h">Altura (h)</label>
+          <input type="number" id="cil_h" step="any" placeholder="Ej. 10">
+        </div>
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <button id="solveBtn">Resolver</button>
+
+      <div class="hint">
+        Ingresa valores positivos distintos de cero. El dibujo se genera a escala automáticamente según los datos ingresados.
+      </div>
+    </section>
+
+    <section class="canvas-panel">
+      <div class="canvas-frame">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+        <canvas id="drawCanvas" width="800" height="340"></canvas>
+      </div>
+
+      <div class="results" id="resultsBox">
+        <h2>Desarrollo de la solución</h2>
+        <div class="result-empty" id="resultEmpty">Selecciona una figura, ingresa las variables y presiona «Resolver» para ver el procedimiento paso a paso.</div>
+        <div id="stepsContainer"></div>
+        <div class="final-value" id="finalValue" style="display:none;"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>TABLERO GEOMÉTRICO — HERRAMIENTA DE CÁLCULO EDUCATIVO — SIN DEPENDENCIAS EXTERNAS</footer>
+</div>
+
+<script>
+(function(){
+  const shapeSelect = document.getElementById('shapeSelect');
+  const fieldGroups = document.querySelectorAll('.field-group');
+  const solveBtn = document.getElementById('solveBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  const resultEmpty = document.getElementById('resultEmpty');
+  const stepsContainer = document.getElementById('stepsContainer');
+  const finalValue = document.getElementById('finalValue');
+
+  const COLORS = {
+    line:'#233a55',
+    amber:'#d98e3b',
+    teal:'#2f8f82',
+    grid:'#dbe8f5',
+    dim:'#6d84a0'
+  };
+
+  function showFields(shape){
+    fieldGroups.forEach(g => {
+      g.classList.toggle('active', g.dataset.shape === shape);
+    });
+  }
+  showFields(shapeSelect.value);
+  shapeSelect.addEventListener('change', () => {
+    showFields(shapeSelect.value);
+    clearError();
+    clearResults();
+  });
+
+  function clearError(){
+    errorMsg.classList.remove('show');
+    errorMsg.textContent = '';
+  }
+  function setError(msg){
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('show');
+  }
+  function clearResults(){
+    stepsContainer.innerHTML = '';
+    finalValue.style.display = 'none';
+    resultEmpty.style.display = 'block';
+    resultEmpty.textContent = 'Selecciona una figura, ingresa las variables y presiona «Resolver» para ver el procedimiento paso a paso.';
+    clearCanvas();
+  }
+  function clearCanvas(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawGridBackground();
+  }
+  function drawGridBackground(){
+    ctx.save();
+    ctx.strokeStyle = COLORS.grid;
+    ctx.lineWidth = 1;
+    for(let x=0;x<=canvas.width;x+=28){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
+    }
+    for(let y=0;y<=canvas.height;y+=28){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  clearCanvas();
+
+  function getNum(id){
+    const el = document.getElementById(id);
+    const v = parseFloat(el.value);
+    return v;
+  }
+
+  // Validation: returns null if ok, or an error string
+  function validatePositive(values){
+    for(const [label, v] of values){
+      if(v === undefined || v === null || isNaN(v)){
+        return `Falta ingresar un valor válido para "${label}".`;
+      }
+      if(v <= 0){
+        return `El valor de "${label}" debe ser un número positivo distinto de cero. No se admiten longitudes negativas o nulas.`;
+      }
+    }
+    return null;
+  }
+
+  function addStep(text){
+    const div = document.createElement('div');
+    div.className = 'step-line';
+    const n = stepsContainer.children.length + 1;
+    div.innerHTML = `<span class="step-num">${String(n).padStart(2,'0')}</span><span>${text}</span>`;
+    stepsContainer.appendChild(div);
+  }
+
+  function setFinal(label, value){
+    finalValue.style.display = 'block';
+    finalValue.innerHTML = `<span>${label}</span>${value}`;
+  }
+
+  function fmt(n){
+    if(Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n).toString();
+    return n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+  }
+
+  // ---------- Drawing helpers ----------
+  function labelText(x,y,text,color,align){
+    ctx.fillStyle = color || COLORS.line;
+    ctx.font = "13px 'JetBrains Mono', monospace";
+    ctx.textAlign = align || 'center';
+    ctx.fillText(text, x, y);
+  }
+
+  function drawCircle(r){
+    clearCanvas();
+    const cx = canvas.width/2, cy = canvas.height/2;
+    const maxRadiusPx = Math.min(canvas.width, canvas.height)/2 - 40;
+    const scale = maxRadiusPx / r;
+    const rpx = r*scale;
+
+    ctx.strokeStyle = COLORS.amber;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rpx, 0, Math.PI*2);
+    ctx.stroke();
+
+    // radius line
+    ctx.strokeStyle = COLORS.teal;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+rpx, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = COLORS.teal;
+    ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2); ctx.fill();
+
+    labelText(cx + rpx/2, cy - 10, `r = ${fmt(r)}`, COLORS.teal);
+  }
+
+  function drawRectangle(b,h){
+    clearCanvas();
+    const padding = 50;
+    const availW = canvas.width - padding*2;
+    const availH = canvas.height - padding*2;
+    const scale = Math.min(availW/b, availH/h);
+    const wpx = b*scale, hpx = h*scale;
+    const x0 = (canvas.width - wpx)/2;
+    const y0 = (canvas.height - hpx)/2;
+
+    ctx.strokeStyle = COLORS.amber;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x0,y0,wpx,hpx);
+
+    labelText(x0+wpx/2, y0+hpx+22, `b = ${fmt(b)}`, COLORS.teal);
+    ctx.save();
+    ctx.translate(x0-22, y0+hpx/2);
+    ctx.rotate(-Math.PI/2);
+    labelText(0,0,`h = ${fmt(h)}`, COLORS.teal);
+    ctx.restore();
+  }
+
+  function drawRightTriangle(a,b){
+    clearCanvas();
+    const padding = 55;
+    const availW = canvas.width - padding*2;
+    const availH = canvas.height - padding*2;
+    const scale = Math.min(availW/b, availH/a);
+    const apx = a*scale, bpx = b*scale;
+    const x0 = (canvas.width - bpx)/2;
+    const y0 = (canvas.height + apx)/2;
+
+    // right angle at (x0, y0), horizontal leg b to the right, vertical leg a upward
+    const p1 = {x:x0, y:y0};
+    const p2 = {x:x0+bpx, y:y0};
+    const p3 = {x:x0, y:y0-apx};
+
+    ctx.strokeStyle = COLORS.amber;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.lineTo(p3.x,p3.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // right-angle marker
+    ctx.strokeStyle = COLORS.teal;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(p1.x, p1.y-12, 12, 12);
+
+    // hypotenuse dashed highlight
+    ctx.strokeStyle = COLORS.line;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(p2.x,p2.y);
+    ctx.lineTo(p3.x,p3.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    labelText((p1.x+p2.x)/2, p1.y+20, `a = ${fmt(b)}`, COLORS.teal);
+    ctx.save();
+    ctx.translate(p1.x-22, (p1.y+p3.y)/2);
+    ctx.rotate(-Math.PI/2);
+    labelText(0,0,`b = ${fmt(a)}`, COLORS.teal);
+    ctx.restore();
+
+    const c = Math.sqrt(a*a+b*b);
+    labelText((p2.x+p3.x)/2 + 24, (p2.y+p3.y)/2 - 6, `c = ${fmt(c)}`, COLORS.line);
+  }
+
+  function drawCylinder(r,h){
+    clearCanvas();
+    const padding = 50;
+    const availH = canvas.height - padding*2;
+    const availW = canvas.width - padding*2;
+    // reserve room: width = 2r ellipse width, height = h + ellipse height
+    const maxRpx = availW/2;
+    const scaleByR = maxRpx/r;
+    const scaleByH = availH/(h + r*0.6);
+    const scale = Math.min(scaleByR, scaleByH);
+    const rpx = r*scale;
+    const hpx = h*scale;
+    const ellipseRy = rpx*0.32;
+
+    const cx = canvas.width/2;
+    const topY = (canvas.height - hpx - ellipseRy)/2 + ellipseRy;
+    const bottomY = topY + hpx;
+
+    ctx.strokeStyle = COLORS.amber;
+    ctx.lineWidth = 2;
+
+    // side lines
+    ctx.beginPath();
+    ctx.moveTo(cx-rpx, topY);
+    ctx.lineTo(cx-rpx, bottomY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx+rpx, topY);
+    ctx.lineTo(cx+rpx, bottomY);
+    ctx.stroke();
+
+    // top ellipse
+    ctx.beginPath();
+    ctx.ellipse(cx, topY, rpx, ellipseRy, 0, 0, Math.PI*2);
+    ctx.stroke();
+
+    // bottom ellipse (front arc solid, back arc dashed for depth)
+    ctx.beginPath();
+    ctx.ellipse(cx, bottomY, rpx, ellipseRy, 0, 0, Math.PI, false);
+    ctx.stroke();
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.ellipse(cx, bottomY, rpx, ellipseRy, 0, Math.PI, Math.PI*2, false);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // radius marker on top ellipse
+    ctx.strokeStyle = COLORS.teal;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    ctx.moveTo(cx,topY);
+    ctx.lineTo(cx+rpx, topY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    labelText(cx+rpx/2, topY-10, `r = ${fmt(r)}`, COLORS.teal);
+    ctx.save();
+    ctx.translate(cx-rpx-22, (topY+bottomY)/2);
+    ctx.rotate(-Math.PI/2);
+    labelText(0,0,`h = ${fmt(h)}`, COLORS.teal);
+    ctx.restore();
+  }
+
+  // ---------- Solvers ----------
+  function solveCircle(){
+    const r = getNum('circ_r');
+    const err = validatePositive([['radio r', r]]);
+    if(err) return {error:err};
+
+    const area = Math.PI*r*r;
+    const perim = 2*Math.PI*r;
+
+    const steps = [
+      `Figura: círculo con radio r = ${fmt(r)}.`,
+      `Fórmula del área: A = π × r². Sustituyendo: A = π × ${fmt(r)}² = π × ${fmt(r*r)}.`,
+      `Área calculada: A ≈ ${fmt(area)} unidades².`,
+      `Fórmula del perímetro (circunferencia): P = 2 × π × r. Sustituyendo: P = 2 × π × ${fmt(r)}.`,
+      `Perímetro calculado: P ≈ ${fmt(perim)} unidades.`
+    ];
+
+    drawCircle(r);
+    return {steps, final:`Área ≈ ${fmt(area)} u² &nbsp;|&nbsp; Perímetro ≈ ${fmt(perim)} u`};
+  }
+
+  function solveRectangle(){
+    const b = getNum('rect_b');
+    const h = getNum('rect_h');
+    const err = validatePositive([['base b', b], ['altura h', h]]);
+    if(err) return {error:err};
+
+    const area = b*h;
+    const perim = 2*(b+h);
+
+    const steps = [
+      `Figura: rectángulo con base b = ${fmt(b)} y altura h = ${fmt(h)}.`,
+      `Fórmula del área: A = b × h. Sustituyendo: A = ${fmt(b)} × ${fmt(h)}.`,
+      `Área calculada: A = ${fmt(area)} unidades².`,
+      `Fórmula del perímetro: P = 2 × (b + h). Sustituyendo: P = 2 × (${fmt(b)} + ${fmt(h)}).`,
+      `Perímetro calculado: P = ${fmt(perim)} unidades.`
+    ];
+
+    drawRectangle(b,h);
+    return {steps, final:`Área = ${fmt(area)} u² &nbsp;|&nbsp; Perímetro = ${fmt(perim)} u`};
+  }
+
+  function solveRightTriangle(){
+    const a = getNum('tri_a');
+    const b = getNum('tri_b');
+    const err = validatePositive([['cateto a', a], ['cateto b', b]]);
+    if(err) return {error:err};
+
+    const c2 = a*a + b*b;
+    const c = Math.sqrt(c2);
+    const area = (a*b)/2;
+    const perim = a+b+c;
+
+    const steps = [
+      `Figura: triángulo rectángulo con catetos a = ${fmt(a)} y b = ${fmt(b)}.`,
+      `Teorema de Pitágoras: c² = a² + b². Sustituyendo: c² = ${fmt(a)}² + ${fmt(b)}² = ${fmt(a*a)} + ${fmt(b*b)} = ${fmt(c2)}.`,
+      `Despejando la hipotenusa: c = √${fmt(c2)} ≈ ${fmt(c)}.`,
+      `Fórmula del área: A = (a × b) / 2. Sustituyendo: A = (${fmt(a)} × ${fmt(b)}) / 2.`,
+      `Área calculada: A = ${fmt(area)} unidades².`,
+      `Perímetro: P = a + b + c = ${fmt(a)} + ${fmt(b)} + ${fmt(c)} ≈ ${fmt(perim)} unidades.`
+    ];
+
+    drawRightTriangle(a,b);
+    return {steps, final:`Hipotenusa c ≈ ${fmt(c)} u &nbsp;|&nbsp; Área = ${fmt(area)} u² &nbsp;|&nbsp; Perímetro ≈ ${fmt(perim)} u`};
+  }
+
+  function solveCylinder(){
+    const r = getNum('cil_r');
+    const h = getNum('cil_h');
+    const err = validatePositive([['radio de la base r', r], ['altura h', h]]);
+    if(err) return {error:err};
+
+    const areaBase = Math.PI*r*r;
+    const volume = areaBase*h;
+    const lateral = 2*Math.PI*r*h;
+    const totalArea = 2*areaBase + lateral;
+
+    const steps = [
+      `Figura: cilindro con radio de la base r = ${fmt(r)} y altura h = ${fmt(h)}.`,
+      `Área de la base circular: A_base = π × r² = π × ${fmt(r)}² ≈ ${fmt(areaBase)} unidades².`,
+      `Fórmula del volumen: V = A_base × h. Sustituyendo: V = ${fmt(areaBase)} × ${fmt(h)}.`,
+      `Volumen calculado: V ≈ ${fmt(volume)} unidades³.`,
+      `Área lateral: A_lateral = 2 × π × r × h ≈ ${fmt(lateral)} unidades².`,
+      `Área total (2 bases + lateral): A_total = 2 × ${fmt(areaBase)} + ${fmt(lateral)} ≈ ${fmt(totalArea)} unidades².`
+    ];
+
+    drawCylinder(r,h);
+    return {steps, final:`Volumen ≈ ${fmt(volume)} u³ &nbsp;|&nbsp; Área total ≈ ${fmt(totalArea)} u²`};
+  }
+
+  const solvers = {
+    circulo: solveCircle,
+    rectangulo: solveRectangle,
+    triangulo_rect: solveRightTriangle,
+    cilindro: solveCylinder
+  };
+
+  solveBtn.addEventListener('click', () => {
+    clearError();
+    const shape = shapeSelect.value;
+    const solver = solvers[shape];
+    if(!solver){
+      setError('No se reconoce el tipo de figura seleccionado.');
+      return;
+    }
+
+    let result;
+    try{
+      result = solver();
+    }catch(e){
+      setError('Ocurrió un error al calcular. Verifica que todos los valores sean numéricos y válidos para esta figura.');
+      clearCanvas();
+      return;
+    }
+
+    if(result.error){
+      setError(result.error);
+      stepsContainer.innerHTML = '';
+      finalValue.style.display = 'none';
+      resultEmpty.style.display = 'block';
+      resultEmpty.textContent = 'No fue posible calcular con los datos ingresados. Corrige el valor señalado arriba.';
+      clearCanvas();
+      return;
+    }
+
+    resultEmpty.style.display = 'none';
+    stepsContainer.innerHTML = '';
+    result.steps.forEach(addStep);
+    setFinal('Resultado final', result.final);
+  });
+
+})();
+</script>
+</body>
+</html>
